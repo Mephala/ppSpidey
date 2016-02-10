@@ -33,18 +33,18 @@ public class PPSpider {
         return instance;
     }
 
-    public PPDataBundle startSpiding(Logger logger) {
+    public PPDataBundle startSpiding(Logger logger, Integer limit) {
         PPDataBundle ppDataBundle = new PPDataBundle();
-        List<PPCpu> cpuList = fetchCpuListFromOnlineContent(logger);
+        List<PPCpu> cpuList = fetchCpuListFromOnlineContent(logger, limit);
         ppDataBundle.setPpCpuList(cpuList);
         return ppDataBundle;
     }
 
-    private List<PPCpu> fetchCpuListFromOnlineContent(Logger logger) {
+    private List<PPCpu> fetchCpuListFromOnlineContent(Logger logger, Integer limit) {
         try {
             String urlToFetch = "http://pcpartpicker.com/parts/cpu/fetch/";
             List<PPCpu> cpuList = new ArrayList<>();
-            JsonResponse jsonResponse = addProductsFromFetchUrl(urlToFetch, cpuList, logger);
+            JsonResponse jsonResponse = addProductsFromFetchUrl(urlToFetch, cpuList, logger, limit);
             String paging = jsonResponse.getResult().getPaging_row();
             int pageIndex = paging.lastIndexOf("#page=");
             if (pageIndex != -1) {
@@ -53,8 +53,10 @@ public class PPSpider {
                 String pageCount = paging.substring(0, quoteIndex);
                 Integer maxPage = Integer.parseInt(pageCount);
                 for (int i = 2; i <= maxPage; i++) {
+                    if (limit != null && cpuList.size() == limit.intValue())
+                        break;
                     urlToFetch = "http://pcpartpicker.com/parts/cpu/fetch/?page=" + i;
-                    addProductsFromFetchUrl(urlToFetch, cpuList, logger);
+                    addProductsFromFetchUrl(urlToFetch, cpuList, logger, limit);
                 }
             }
             return cpuList;
@@ -64,14 +66,16 @@ public class PPSpider {
         }
     }
 
-    private JsonResponse addProductsFromFetchUrl(String urlToFetch, List<PPCpu> cpuList, Logger logger) throws IOException {
+    private JsonResponse addProductsFromFetchUrl(String urlToFetch, List<PPCpu> cpuList, Logger logger, Integer limit) throws IOException {
+        if (limit != null && cpuList.size() == limit.intValue())
+            return null;
         String retval = getContentsOfWebsite(urlToFetch);
         ObjectMapper om = new ObjectMapper();
         JsonResponse jsonResponse = om.readValue(retval, JsonResponse.class);
         String htmlContent = jsonResponse.getResult().getHtml();
         int hrefIndex = htmlContent.indexOf("<a href=\"");
         htmlContent = htmlContent.substring(hrefIndex);
-
+        int count = 0;
         while (hrefIndex != -1) {
             PPCpu cpu = new PPCpu();
             int aEnd = htmlContent.indexOf("\">");
@@ -111,6 +115,9 @@ public class PPSpider {
             cpu.setDetailUrl(cpuUrl);
             fillInSpecifications(cpu, logger);
             cpuList.add(cpu);
+            count++;
+            if (limit != null && cpuList.size() == limit.intValue())
+                break;
         }
         return jsonResponse;
     }

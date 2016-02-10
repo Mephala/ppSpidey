@@ -2,6 +2,7 @@ package com.mephalay.spider.test;
 
 import com.mephalay.spider.PPSpider;
 import mockit.integration.junit4.JMockit;
+import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -14,6 +15,6 @@ public class TestPPSpider {
 
     @Test
     public void testPPSpiding() {
-        PPSpider.getInstance().startSpiding(null);
+        PPSpider.getInstance().startSpiding(Logger.getLogger(this.getClass()), 5);
     }
 }
