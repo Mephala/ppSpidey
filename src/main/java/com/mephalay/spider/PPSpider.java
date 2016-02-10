@@ -39,7 +39,7 @@ public class PPSpider {
         return ppDataBundle;
     }
 
-    public List<PPCpu> fetchCpuListFromOnlineContent(Logger logger) {
+    private List<PPCpu> fetchCpuListFromOnlineContent(Logger logger) {
         try {
             String urlToFetch = "http://pcpartpicker.com/parts/cpu/fetch/";
             List<PPCpu> cpuList = new ArrayList<>();
