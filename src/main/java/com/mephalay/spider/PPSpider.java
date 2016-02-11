@@ -76,10 +76,13 @@ public class PPSpider {
         JsonResponse jsonResponse = om.readValue(retval, JsonResponse.class);
         String htmlContent = jsonResponse.getResult().getHtml();
         int hrefIndex = htmlContent.indexOf("<a href=\"");
+        if (hrefIndex == -1)
+            return null;
         htmlContent = htmlContent.substring(hrefIndex);
+        hrefIndex = htmlContent.indexOf("<a href=\"");
         while (hrefIndex != -1) {
             PPCpu cpu = new PPCpu();
-            hrefIndex = htmlContent.indexOf("<a href=\"");
+
             if (hrefIndex != -1) {
                 htmlContent = htmlContent.substring(hrefIndex + 9);
                 int endOfUrlIndex = htmlContent.indexOf("\">");
@@ -113,10 +116,13 @@ public class PPSpider {
             int cpuEndIndex = htmlContent.indexOf("</tr>");
             htmlContent = htmlContent.substring(cpuEndIndex + 5);
             logger.info("Getting specifications for:" + cpu);
+            if (cpu.getCpuName().equalsIgnoreCase("AMD Sempron 145 (OEM/Tray)"))
+                System.out.println("Mebug");
             fillInSpecifications(cpu, logger);
             cpuList.add(cpu);
             if (limit != null && cpuList.size() == limit.intValue())
                 break;
+            hrefIndex = htmlContent.indexOf("<a href=\"");
         }
         return jsonResponse;
     }

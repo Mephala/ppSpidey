@@ -11,27 +11,16 @@ public class PPCpu {
     private String guid;
 
     private String cpuName;
-
     private String cpuFrequency;
-
     private Integer cpuCoreCount;
-
     private BigDecimal cpuTdp;
-
     private Integer cpuRatedCount;
-
     private BigDecimal cpuAverageRating;
-
     private BigDecimal cpuCheapestPrice;
-
     private String detailUrl;
-
     private String manufacturer;
-
     private String model;
-
     private String dataWidth;
-
     private String socket;
     private String L1Cache;
     private String L2Cache;
@@ -45,6 +34,8 @@ public class PPCpu {
     public String toString() {
         return "PPCpu{" +
                 "cpuName='" + cpuName + '\'' +
+                ", model='" + model + '\'' +
+                ", socket='" + socket + '\'' +
                 '}';
     }
 
