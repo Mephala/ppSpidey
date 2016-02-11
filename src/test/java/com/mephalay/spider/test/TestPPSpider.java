@@ -15,6 +15,6 @@ public class TestPPSpider {
 
     @Test
     public void testPPSpiding() {
-        PPSpider.getInstance().startSpiding(Logger.getLogger(this.getClass()), 5);
+        PPSpider.getInstance().startSpiding(Logger.getRootLogger(), 5);
     }
 }

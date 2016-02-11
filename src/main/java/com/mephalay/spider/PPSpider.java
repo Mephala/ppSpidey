@@ -21,9 +21,11 @@ import java.util.UUID;
 public class PPSpider {
 
     private static PPSpider instance = null;
+    private final long WEB_REQUEST_INTERVAL = 2000L;
+    private Long lastWebRequest;
 
     private PPSpider() {
-
+        this.lastWebRequest = System.currentTimeMillis();
     }
 
 
@@ -75,9 +77,16 @@ public class PPSpider {
         String htmlContent = jsonResponse.getResult().getHtml();
         int hrefIndex = htmlContent.indexOf("<a href=\"");
         htmlContent = htmlContent.substring(hrefIndex);
-        int count = 0;
         while (hrefIndex != -1) {
             PPCpu cpu = new PPCpu();
+            hrefIndex = htmlContent.indexOf("<a href=\"");
+            if (hrefIndex != -1) {
+                htmlContent = htmlContent.substring(hrefIndex + 9);
+                int endOfUrlIndex = htmlContent.indexOf("\">");
+                String cpuUrl = htmlContent.substring(0, endOfUrlIndex);
+                cpu.setDetailUrl(cpuUrl);
+            }
+            cpu.setGuid(UUID.randomUUID().toString());
             int aEnd = htmlContent.indexOf("\">");
             int atagEnd = htmlContent.indexOf("</a>");
             String cpuName = htmlContent.substring(aEnd + 2, atagEnd);
@@ -103,26 +112,22 @@ public class PPSpider {
             cpu.setCpuTdp(new BigDecimal(tdp.replace("W", "")));
             int cpuEndIndex = htmlContent.indexOf("</tr>");
             htmlContent = htmlContent.substring(cpuEndIndex + 5);
-            hrefIndex = htmlContent.indexOf("<a href=\"");
-            if (hrefIndex != -1)
-                htmlContent = htmlContent.substring(hrefIndex + 9);
-            else
-                continue;
-            cpu.setGuid(UUID.randomUUID().toString());
-            int endOfUrlIndex = htmlContent.indexOf("\">");
-            String cpuUrl = htmlContent.substring(0, endOfUrlIndex);
             logger.info("Getting specifications for:" + cpu);
-            cpu.setDetailUrl(cpuUrl);
             fillInSpecifications(cpu, logger);
             cpuList.add(cpu);
-            count++;
             if (limit != null && cpuList.size() == limit.intValue())
                 break;
         }
         return jsonResponse;
     }
 
-    private String getContentsOfWebsite(String urlToFetch) throws IOException {
+    private synchronized String getContentsOfWebsite(String urlToFetch) throws IOException {
+        long now = System.currentTimeMillis();
+        long differ = now - lastWebRequest;
+        while (differ < WEB_REQUEST_INTERVAL) {
+            now = System.currentTimeMillis();
+            differ = now - lastWebRequest;
+        }
         URL website = new URL(urlToFetch);
         URLConnection connection = website.openConnection();
         BufferedReader in = new BufferedReader(
@@ -136,12 +141,16 @@ public class PPSpider {
             response.append(inputLine);
 
         in.close();
+        lastWebRequest = System.currentTimeMillis();
         return response.toString();
     }
 
     private void fillInSpecifications(PPCpu cpu, Logger logger) {
         try {
-            String htmlContent = getContentsOfWebsite("http://pcpartpicker.com" + cpu.getDetailUrl());
+            String detailUrl = cpu.getDetailUrl();
+            if (detailUrl == null || detailUrl.length() == 0)
+                return;
+            String htmlContent = getContentsOfWebsite("http://pcpartpicker.com" + detailUrl);
             String startText = "<div class=\"col-xs-4\">Manufacturer</div>";
             int start = htmlContent.indexOf(startText);
             if (start != -1) {
